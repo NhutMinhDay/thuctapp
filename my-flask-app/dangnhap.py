@@ -3,6 +3,12 @@ from db import get_db_connection
 
 login_bp = Blueprint('login_bp', __name__)
 
+
+from flask import Blueprint, request, jsonify
+from db import get_db_connection
+
+login_bp = Blueprint('login_bp', __name__)
+
 @login_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -23,11 +29,13 @@ def login():
     if user:
         id_nv, stored_password = user
         if password == stored_password:
-            # Second query to get the employee details
+            # Second query to get the employee details and images
             query = """
-                SELECT ID_NV, MA_QR, TEN_NV, DIACHI_NV, EMAIL_NV, SDT_NV, GIOITINH_NV, NGAYSINH_NV 
-                FROM NHANVIEN 
-                WHERE ID_NV = %s
+                SELECT NV.ID_NV, NV.MA_QR, NV.TEN_NV, NV.DIACHI_NV, NV.EMAIL_NV, NV.SDT_NV, NV.GIOITINH_NV, NV.NGAYSINH_NV,
+                       IMG.IMAGE_TOP, IMG.IMAGE_BOTTOM, IMG.IMAGE_LEFT, IMG.IMAGE_RIGHT, IMG.IMAGE_BETWEEN
+                FROM NHANVIEN NV
+                INNER JOIN IMAGE_BASE64_NV IMG ON NV.ID_NV = IMG.ID_NV
+                WHERE NV.ID_NV = %s
             """
             cursor.execute(query, (id_nv,))
             employee = cursor.fetchone()
@@ -44,7 +52,12 @@ def login():
                     'EMAIL_NV': employee[4],
                     'SDT_NV': employee[5],
                     'GIOITINH_NV': employee[6],
-                    'NGAYSINH_NV': employee[7].isoformat()  # Convert date to string
+                    'NGAYSINH_NV': employee[7].isoformat(),  
+                    'IMAGE_TOP': employee[8],
+                    'IMAGE_BOTTOM': employee[9],
+                    'IMAGE_LEFT': employee[10],
+                    'IMAGE_RIGHT': employee[11],
+                    'IMAGE_BETWEEN': employee[12]
                 }
 
                 return jsonify({
@@ -54,7 +67,7 @@ def login():
                     'id_nv': id_nv
                 }), 200
             else:
-                return jsonify({'error': 'Không tìm thấy thông tin nhân viên'}), 404
+                return jsonify({'error': 'Không tìm thấy thông tin nhân viên hoặc hình ảnh'}), 404
         else:
             cursor.close()
             conn.close()

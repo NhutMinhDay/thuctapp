@@ -1,5 +1,5 @@
 # app.py
-from flask import Flask, jsonify,Response, request
+from flask import Flask, jsonify, Response, request
 from flask_cors import CORS
 from thoigian_diemdanh import thoigian_diemdanh
 from quanli_QR import qr_nv
@@ -13,6 +13,7 @@ from db import get_db_connection
 import threading
 from time import sleep, time
 from deepface.modules import detection
+
 # from layqr_nhanvien import layqr_nv
 # from read_image import read_image
 from typing import Union
@@ -51,6 +52,7 @@ VECTO_QR = []
 #         "VT_BOTTOM": "[0.1, 0.2, 0.3, 0.4]"
 #     }
 # ]
+
 
 def extract_time(datetime_obj):
     try:
@@ -228,18 +230,19 @@ def print_vectors():
     min_distance = distances[min_distance_key]
 
     result_message = f"Khoảng cách nhỏ nhất: {min_distance}"
-    
+
     if min_distance < threshold:
         result_message += " (Check-in thành công!)"
     else:
         result_message += " (Không đủ điểm khớp.)"
-    
+
     print(distances)
 
     # VECTO.clear()
     # VECTO_QR.clear()
 
     return jsonify({"distances": distances, "result": result_message}), 200
+
 
 def process_image(image_data_base64):
     image_data = image_data_base64.replace("data:image/jpeg;base64,", "")
@@ -334,139 +337,69 @@ def handle_scan():
     except Exception as e:
         print(f"Error occurred: {e}")
         return jsonify({"error": str(e)}), 500
-    
-# from deepface.modules import detection
-# @app.route('/verify-face', methods=['POST'])
-# def verify_face():
-#     try:
-#         file = request.files['image']
-#         image_bytes = np.frombuffer(file.read(), np.uint8)
-#         image = cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
 
-#         # face_objs = DeepFace.extract_faces(img_path=image, enforce_detection=False, detector_backend='yolov8')
-#         face_objs = detection.extract_faces(img_path=image, detector_backend='yolov8')
-#         confidence = face_objs[0]['confidence']
-#         if confidence > 0:
-#             facial_area = face_objs[0]['facial_area']
-#             cv2.rectangle(image, (facial_area['x'], facial_area['y']), (facial_area['x'] + facial_area['w'], facial_area['y'] + facial_area['h']), (255, 0, 0))
-#             if face_objs:
-#                 confidence = face_objs[0]['confidence']
-#                 if confidence > 0:
-#                     return jsonify({"success": True, "message": "Face detected"}), 200
-#                 else:
-#                     return jsonify({"success": False, "message": "No face detected"}), 400
-#             else:
-#                 return jsonify({"success": False, "message": "No face detected"}), 400
-#     except Exception as e:
-#         return jsonify({"success": False, "message": str(e)}), 500
+
 from deepface.modules import detection
-@app.route('/verify-face', methods=['POST'])
+
+
+@app.route("/verify-face", methods=["POST"])
 def verify_face():
     try:
-        if 'image' not in request.files:
+        if "image" not in request.files:
             return jsonify({"success": False, "message": "No image provided"}), 400
-        
-        file = request.files['image']
+
+        file = request.files["image"]
         image_bytes = np.frombuffer(file.read(), np.uint8)
         image = cv2.imdecode(image_bytes, cv2.IMREAD_COLOR)
-        face_objs = detection.extract_faces(img_path=image, detector_backend='yolov8', enforce_detection=False)
-        
+        face_objs = detection.extract_faces(
+            img_path=image, detector_backend="yolov8", enforce_detection=False
+        )
+
         if len(face_objs) == 0:
             return jsonify({"success": False, "message": "No face detected"}), 400
 
-        confidence = face_objs[0]['confidence']
-        facial_area = face_objs[0]['facial_area']
+        confidence = face_objs[0]["confidence"]
+        facial_area = face_objs[0]["facial_area"]
 
         if confidence >= 0.84:
-            cv2.rectangle(image, 
-                          (facial_area['x'], facial_area['y']), 
-                          (facial_area['x'] + facial_area['w'], facial_area['y'] + facial_area['h']), 
-                          (255, 0, 0), 2)
-            
-            cv2.imshow('Detected Face', image)
-            cv2.waitKey(0) 
+            cv2.rectangle(
+                image,
+                (facial_area["x"], facial_area["y"]),
+                (
+                    facial_area["x"] + facial_area["w"],
+                    facial_area["y"] + facial_area["h"],
+                ),
+                (255, 0, 0),
+                2,
+            )
+
+            cv2.imshow("Detected Face", image)
+            cv2.waitKey(0)
             cv2.destroyAllWindows()
-            
-            return jsonify({"success": True, "message": "Face detected", "confidence": confidence}), 200
+
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "Face detected",
+                        "confidence": confidence,
+                    }
+                ),
+                200,
+            )
         else:
-            return jsonify({"success": False, "message": "Face not detected with sufficient confidence"}), 400
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Face not detected with sufficient confidence",
+                    }
+                ),
+                400,
+            )
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
-    
-
-# cap = cv2.VideoCapture(0)
-# lock = threading.Lock()
-# last_capture_time = 0
-# capture_interval = 10
-
-# def generate_frames():
-#     fps = 16  
-#     frame_duration = 1 / fps  
-#     frame_width = 480
-#     frame_height = 360
-    
-#     while True:
-#         with lock:
-#             ref, frame = cap.read()
-#             if not ref:
-#                 break
-
-#             start_time = time() 
-#             frame = cv2.resize(frame, (frame_width, frame_height))
-            
-#             face_objs = detection.extract_faces(img_path=frame, enforce_detection=False, detector_backend='yolov8')
-#             if face_objs:
-#                 confidence = face_objs[0]['confidence']
-#                 if confidence > 0.84:
-#                     global last_capture_time
-#                     if time() - last_capture_time > capture_interval:
-#                         last_capture_time = time()
-#                         facial_area = face_objs[0]['facial_area']
-#                         x, y, w, h = facial_area['x'], facial_area['y'], facial_area['w'], facial_area['h']
-#                         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-#                         print(f"Detected face - x: {x}, y: {y}, w: {w}, h: {h}")
-#                         roi1 = frame[y : y + h, x : x + w]
-#                         roi = cv2.cvtColor(roi1, cv2.COLOR_BGR2RGB)
-#                         embedding12 = DeepFace.verification.__extract_faces_and_embeddings(
-#                             img_path=roi,
-#                             detector_backend="yolov8",
-#                             model_name="Facenet512",
-#                             enforce_detection=False,
-#                         )
-#                         # print("Vecto: ", (embedding12[0][0]))
-#                         print("Số lượng phần tử:", len(embedding12[0][0]))
-#                         cv2.imshow("Image", roi)
-#                         cv2.waitKey(0)
-#                         cv2.destroyAllWindows()
-
-#                         VECTO.append(embedding12[0][0])
-                
-#                         print(f"Captured and stored frame at confidence {confidence}")
-#                         print(VECTO)
-
-#             ret, buffer = cv2.imencode('.jpg', frame)
-#             frame = buffer.tobytes()
-
-#             yield (b'--frame\r\n'
-#                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-
-#             processing_time = time() - start_time
-
-#             sleep_time = frame_duration - processing_time
-#             if sleep_time > 0:
-#                 sleep(sleep_time)
-
-# @app.route('/video_feed')
-# def video_feed():
-#     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-# @app.route('/get_images')
-# def get_images():
-#     global IMAGE
-#     return jsonify(IMAGE)
 
 
 if __name__ == "__main__":
     app.run(debug=True)
-    
-    
