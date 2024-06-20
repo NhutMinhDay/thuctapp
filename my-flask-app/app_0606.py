@@ -30,6 +30,9 @@ import cv2
 from datetime import datetime, timedelta
 import json
 
+
+
+
 app = Flask(__name__)
 CORS(app)
 check_db_connection()
@@ -40,6 +43,11 @@ app.register_blueprint(image_base64_nv)
 app.register_blueprint(register_bp)
 app.register_blueprint(login_bp, url_prefix="/api")
 app.register_blueprint(vecto1)
+
+
+
+
+
 import queue
 
 MA_NHANVIEN = queue.Queue()

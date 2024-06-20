@@ -27,8 +27,8 @@ from datetime import datetime, timedelta
 import json
 from TK import edit
 from dangnhapadmin import log
-
-
+from dangnhapmanagers import loginmanager
+from thongke_ngaylam import thongkengaylam
 
 app = Flask(__name__)
 CORS(app)
@@ -42,6 +42,8 @@ app.register_blueprint(login_bp, url_prefix="/api")
 app.register_blueprint(vecto1)
 app.register_blueprint(edit)
 app.register_blueprint(log)
+app.register_blueprint(loginmanager)
+app.register_blueprint(thongkengaylam)
 
 status = {"distances": [], "result": "", "TenNhanVien": "", "status_fetched": False}
 
